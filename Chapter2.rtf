@@ -1,0 +1,129 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1138\cocoasubrtf510
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\margl1440\margr1440\vieww19540\viewh20200\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\f0\fs24 \cf0 Node.js\
+the Right Way\
+\
+Chapter 2\
+Wrangling the File System\
+\
+Architecture: \
+	How does the Event loop shape a program's flow?\
+	Buffers to transport data between Node's JS engine (your app) and it's native core (low-level C).\
+	Extend core by importing modules.\
+\
+Patterns:\
+	Callbacks for handling async operations.\
+	EventEmitter class can be listened to.\
+	Stream class pipes data around.\
+\
+JavaScript-isms:\
+	Functions are first-class citizens.\
+	Block scoping\
+\
+Supporting Code:\
+	Spawn child process.\
+	Interact with child process.\
+	Capture output of a child process.\
+	Detect state changes of child process.\
+\
+ \
+
+\b watcher.js\
+	
+\b0 require('
+\i\b fs
+\i0\b0 ') is a module \
+	
+\b fs
+\b0  documentation ({\field{\*\fldinst{HYPERLINK "http://nodejs.org/api/fs.html"}}{\fldrslt http://nodejs.org/api/fs.html}})\
+	Returns plain old JS object\
+	CommonJS standard ({\field{\*\fldinst{HYPERLINK "http://www.commonjs.org/specs/modules/1.0/"}}{\fldrslt http://www.commonjs.org/specs/modules/1.0/}})
+\b \
+	\
+
+\b0 1. Node loads script. \
+2. Sees that there is something to do (
+\i\b watch()
+\i0\b0 )\
+3. Awaits the 
+\i\b fs
+\i0\b0  module to observe a change to the watched file. \
+4. Fires callback when change detected. \
+5. Determines that the program has not finished, resumes #3.\
+\
+
+\b Uncaught exception will terminate. 
+\b0 \
+	Change var, observe crash.\
+\
+Include 
+\i\b process
+\i0\b0   \
+	Global object ({\field{\*\fldinst{HYPERLINK "http://nodejs.org/api/process.html"}}{\fldrslt http://nodejs.org/api/process.html}})\
+	aka How Node Deals with Errors\
+	Listens for POSIX Signals, then emits events. ({\field{\*\fldinst{HYPERLINK "http://en.wikipedia.org/wiki/POSIX"}}{\fldrslt http://en.wikipedia.org/wiki/POSIX}})\
+		"Portable Operating System Interface -x"\
+\
+ 	Ex. {\field{\*\fldinst{HYPERLINK "https://github.com/octanner/batman/blob/master/bin/batman.js"}}{\fldrslt https://github.com/octanner/batman/blob/master/bin/batman.js}}\
+https://github.com/octanner/batman/commit/ab79277f26e4ab5713a7fd0ba77dc30831c8ba08\
+\
+\
+	Processes are important; it's how you break up work.\
+\
+
+\b watcher-spawn.js\
+
+\b0 	require('
+\b child-process
+\b0 ') ({\field{\*\fldinst{HYPERLINK "http://nodejs.org/api/child_process.html"}}{\fldrslt http://nodejs.org/api/child_process.html}})\
+	Returns a ChildProcess object\
+		"tri-directional" 
+\i\b popen(3)
+\i0\b0  facility ({\field{\*\fldinst{HYPERLINK "http://linux.die.net/man/3/popen"}}{\fldrslt http://linux.die.net/man/3/popen}})\
+	Has three Streams: stein, stout, std err\
+	\
+we're using 
+\b stdout
+\b0  Then, 
+\b pipe
+\b0 . Pipe to where? To our process.stout.\
+\
+\
+
+\b watcher-spawn-parse.js\
+	
+\b0 Attach event listener to ls.stdout \
+	when it fires, we get a chunk of data. This is a buffer.\
+	Buffer is a pointer to a blob of binary data, allocated by Node's native core (outside JavaScript). \
+	Cannot be resized, so you must convert them. This can be slow. \
+\
+
+\b\fs30 Reading and Writing
+\fs24 \
+\
+	
+\b0 1. Read entire file at once. \
+	2. Create Streams to buffer\
+
+\b \
+read-simple.js 
+\b0  ({\field{\*\fldinst{HYPERLINK "http://nodejs.org/api/fs.html#fs_fs_readfile_filename_options_callback"}}{\fldrslt http://nodejs.org/api/fs.html#fs_fs_readfile_filename_options_callback}})
+\b \
+write-simple.js 
+\b0 ({\field{\*\fldinst{HYPERLINK "http://nodejs.org/api/fs.html#fs_fs_writefile_filename_data_options_callback"}}{\fldrslt http://nodejs.org/api/fs.html#fs_fs_writefile_filename_data_options_callback}})\
+\
+Synchronous calls, too.\
+\
+Node should be broken into two parts:\
+1. Initialization - Dependencies: libraries, parameters, etc. Ex: require is synchronous.\
+2. Operation - Then rest of app is async.\
+\
+Error handling: \
+	1. callbacks from functions.\
+	2. error events from EvenEmitters.\
+	\
+}
